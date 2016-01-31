@@ -115,21 +115,11 @@ def validate_config(config):
   _validate_cache_config(config['cache'])
   return True
 
-def load_cached_targets(cache_config, valid_targets):
-  """ Load cached targets """
-  # check if there is cached data
-  print 'STATUS: Checking cache'
-
-  # data is cached as uri => ds, construct valid uri targets to validate
-  valid_target_uris = []
-  for valid_target in valid_targets:
-    for target_key, target_values in valid_target.iteritems():
-      valid_target_uris.append(target_key + target_values['filter'])
-
+def load_cached_uris(cache_config, uris_to_load):
+  """ Load cached device42 uris """
   # find the cached files
   cached_files = glob.glob(os.path.join(cache_config['dir'], '*.json'))
   if not cached_files:
-    print 'STATUS: No targets cached'
     return []
 
   # load the cached files
@@ -137,13 +127,10 @@ def load_cached_targets(cache_config, valid_targets):
   for cached_file in cached_files:
     cached_ds.update(load_json_file(cached_file))
 
-  # extract out the elements whose keys match valid_target_uris
-
-  valid_uris = set(cached_ds.keys()) & set(valid_target_uris)
+  # extract out the elements whose keys match uris_to_load
+  valid_uris = set(cached_ds.keys()) & set(uris_to_load)
   if not valid_uris:
-    print 'STATUS: Did not find any valid cached targets'
     return []
-  print 'STATUS: Found cached targets - %s' % sorted(list(valid_uris))
 
   # ignore keys other than valid_cached_ds keys
   for invalid_uri in set(cached_ds.keys()) - valid_uris:
@@ -153,10 +140,10 @@ def load_cached_targets(cache_config, valid_targets):
 
 def load_targets(targetfiles):
   """ Load the targets data """
-  print 'STATUS: Loading target names from %s' % targetfiles
+  print 'STATUS: Loading target uris from %s' % targetfiles
   targets_ds = [load_json_file(x) for x in targetfiles]
   targetnames = flatten_list([x.keys() for x in targets_ds])
-  print 'STATUS: Found targets - %s' % sorted(targetnames)
+  print 'STATUS: Checking uris - %s' % targetnames
   return targets_ds
 
 def load_action(actionfile, target_action):
@@ -222,12 +209,34 @@ def read(ctx, **kwargs):
   kwargs['targetfiles'] = copy.deepcopy(kwargs['targetfile'])
   del kwargs['targetfile']
   kwargs['targets'] = load_targets(kwargs['targetfiles'])
-  kwargs['action'] = load_action(kwargs['actionfile'], 'read')
   cached_targets = []
+
+  # data is cached as uri => ds, construct list of uris to load
+  uris_to_load = []
+  for target in kwargs['targets']:
+    for target_key, target_values in target.iteritems():
+      if 'filter' not in target_values:
+        uris_to_load.append(target_key)
+      else:
+        uris_to_load.append(target_key + target_values['filter'])
+
   if kwargs['cache']:
-    cached_targets = load_cached_targets(ctx.obj['config']['cache'], kwargs['targets'])
-    if not cached_targets:
-      print kwargs['targets']
+    # check if any uri data already cached
+    print 'STATUS: Checking uris in cache - %s' % uris_to_load
+    cached_uris_ds = load_cached_uris(ctx.obj['config']['cache'], uris_to_load)
+    if not cached_uris_ds:
+      print 'STATUS: Did not find target uris in cache'
+    else:
+      uris_to_load = list(set(uris_to_load) - set(cached_uris_ds.keys()))
+      if not uris_to_load:
+        print 'STATUS: Found all uris in cache'
+      else:
+        print 'STATUS: Found uris in cache - %s' % cached_uris_ds.keys()
+        print 'STATUS: Uncached uris - %s' % uris_to_load
+
+  if uris_to_load:
+    print 'STATUS: Loading uris - %s' % uris_to_load
+  kwargs['action'] = load_action(kwargs['actionfile'], 'read')
 
 @cli.command()
 @click.option('-t', '--targetfile', callback=find_targetfiles, multiple=True,
