@@ -13,6 +13,7 @@ import click
 import json
 
 from device42_mgr.loader import Loader, Device42MgrLoaderException
+from device42_mgr.cachier import Cachier
 from device42_mgr.lib.utils import InvalidValueException
 import device42_mgr.lib.utils as utils
 
@@ -133,14 +134,22 @@ def create(ctx, **kwargs):
               default=None)
 @click.option('--cache/--no-cache', default=True,
               help='Use cached data. Default: True')
+@click.option('--refresh/--no-refresh', default=False,
+              help='Refresh the cached data. Makes sense only with --cache. ' + \
+                   'Default: False')
 @click.option('--maxrecords', default=-1,
               help='Max records to show. Default: -1 - show all')
 @click.pass_context
 def read(ctx, **kwargs):
   """ Read device42 objects """
+  cache_obj = None
+  if kwargs['cache'] or kwargs['refresh']:
+    cache_obj = Cachier(ctx.obj['config']['cache']['dir'],
+                        ctx.obj['config']['cache']['file'])
   loader = Loader(kwargs['targetfile'],
-                  ctx.obj['config']['cache']['dir'],
-                  use_cache=kwargs['cache'])
+                  cache_obj,
+                  use_cache=kwargs['cache'],
+                  refresh_cache=kwargs['refresh'])
   try:
     loader.load()
   except Device42MgrLoaderException as loader_exception:
@@ -165,21 +174,8 @@ def read(ctx, **kwargs):
 @click.pass_context
 def update(ctx, **kwargs):
   """ Update device42 objects """
-  kwargs['targetfiles'] = copy.deepcopy(kwargs['targetfile'])
-  del kwargs['targetfile']
-
-  print 'STATUS: Loading target uris from %s' % kwargs['targetfiles']
-  kwargs['targets'] = load_targets(kwargs['targetfiles'])
-  print 'STATUS: Checking uris - %s' % kwargs['targets']
-
-  print 'STATUS: Loading actionfile'
-  try:
-    kwargs['action'] = load_action(kwargs['actionfile'], 'update')
-  except InvalidValueException as invalid_value_exception:
-    click.echo(click.style(str(invalid_value_exception), fg='red'))
-    ctx.exit(1)
-
-  print 'STATUS: Found action - %s' % kwargs['action']
+  click.echo(click.style('Not implemented yet', fg='red'))
+  ctx.exit(1)
 
 @cli.command()
 @click.pass_context

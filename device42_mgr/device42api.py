@@ -2,11 +2,11 @@
 
 import os
 import json
+
 import requests
+requests.packages.urllib3.disable_warnings()
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import ConnectionError, ConnectTimeout
-
-import device42_mgr.lib.utils as utils
 
 class Device42ApiException(Exception):
   pass
@@ -38,8 +38,6 @@ class Api(object):
     return json.dumps(self.__dict__, indent=2)
 
   def __init__(self, **kwargs):
-    """ Initialize connection params """
-
     # initialize attributes
     self.host = self.port = self.username = self.password = None
     self.request_timeout = 60
@@ -76,7 +74,9 @@ class Api(object):
     # massage captured data
     self.port = int(self.port)
     self.request_timeout = int(self.request_timeout)
+
     if self.verify_https == 'FALSE' or self.verify_https is None:
       self.verify_https = False
+
     if self.port == 443:
       self.transport = 'https'
