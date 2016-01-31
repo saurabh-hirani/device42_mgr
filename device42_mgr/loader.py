@@ -34,7 +34,7 @@ class Loader(object):
 
     # ring in the new, ring out the uncached
     for uri in new_uris:
-      self.uri_ds_map[uri] = response_json
+      self.uri_ds_map[uri] = new_uris[uri]
       self.uncached_uris.remove(uri)
 
   def extract_uris(self):
