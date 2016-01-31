@@ -10,7 +10,7 @@ class Cachier(object):
   """ Read/update the uri cache """
 
   def _load_from_cache(self, only_pickle=False):
-    """ Method to load from cache - hide how data is cached """
+    """ Method to load from cache - abstract how data is cached """
     data = {}
 
     if not only_pickle:
@@ -25,16 +25,20 @@ class Cachier(object):
 
     return data
 
-  def _dump_to_cache(self, uri_ds_map):
-    """ Refresh the cache with new data """
+  def _dump_to_cache(self, data):
+    """ Method to dump to cache - abstract how data is cached """
     curr_ds = {}
     if os.path.exists(self.cache_filepath):
       curr_ds.update(self._load_from_cache(only_pickle=True))
 
-    curr_ds.update(uri_ds_map)
+    curr_ds.update(data)
 
     with open(self.cache_filepath, 'wb') as fdesc:
       pickle.dump(curr_ds, fdesc)
+
+  def refresh(self, uris_ds_map):
+    """ Refresh the cache """
+    self._dump_to_cache(uris_ds_map)
 
   def load(self, uris=None):
     """ Load cached uri data from previous runs """
