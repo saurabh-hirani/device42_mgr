@@ -9,9 +9,6 @@
 
 import os
 import copy
-import glob
-import json
-
 import click
 
 from device42_mgr.loader import Loader, Device42MgrLoaderException
@@ -80,29 +77,6 @@ def validate_config(config):
   _validate_actions_config(config['actions'])
   _validate_cache_config(config['cache'])
   return True
-
-def load_cached_uris(cache_config, uris_to_load):
-  """ Load cached device42 uris """
-  # find the cached files
-  cached_files = glob.glob(os.path.join(cache_config['dir'], '*.json'))
-  if not cached_files:
-    return []
-
-  # load the cached files
-  cached_ds = {}
-  for cached_file in cached_files:
-    cached_ds.update(utils.load_json_file(cached_file))
-
-  # extract out the elements whose keys match uris_to_load
-  valid_uris = set(cached_ds.keys()) & set(uris_to_load)
-  if not valid_uris:
-    return []
-
-  # ignore keys other than valid_cached_ds keys
-  for invalid_uri in set(cached_ds.keys()) - valid_uris:
-    del cached_ds[invalid_uri]
-
-  return cached_ds
 
 def load_action(actionfile, target_action):
   """ Load the action data """
