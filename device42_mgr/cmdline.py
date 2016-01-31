@@ -5,9 +5,11 @@
 import os
 import itertools
 import json
-import copy
-import click
+import glob
 import yaml
+import copy
+
+import click
 
 def flatten_list(target_list):
   """ Flatten a list """
@@ -117,34 +119,49 @@ def load_cached_targets(cache_config, valid_targets):
   """ Load cached targets """
   # check if there is cached data
   print 'STATUS: Checking cache'
-  cache_dirpath = cache_config['dir']
-  cache_filenames = cache_config['files']
-  cache_files = [os.path.join(cache_dirpath, x) for x in cache_filenames]
-  cached_targets = [load_json_file(x) for x in cache_files if os.path.exists(x)]
 
-  if not cached_targets:
+  # data is cached as uri => ds, construct valid uri targets to validate
+  valid_target_uris = []
+  for valid_target in valid_targets:
+    for target_key, target_values in valid_target.iteritems():
+      valid_target_uris.append(target_key + target_values['filter'])
+
+  # find the cached files
+  cached_files = glob.glob(os.path.join(cache_config['dir'], '*.json'))
+  if not cached_files:
     print 'STATUS: No targets cached'
     return []
 
-  valid_cached_targets = [x for x in cached_targets if x in valid_targets]
-  if not valid_cached_targets:
-    print 'STATUS: No valid targets cached'
-    return []
+  # load the cached files
+  cached_ds = {}
+  for cached_file in cached_files:
+    cached_ds.update(load_json_file(cached_file))
 
-  print 'STATUS: Found cached targets - %s'  % valid_cached_targets
-  return valid_cached_targets
+  # extract out the elements whose keys match valid_target_uris
+
+  valid_uris = set(cached_ds.keys()) & set(valid_target_uris)
+  if not valid_uris:
+    print 'STATUS: Did not find any valid cached targets'
+    return []
+  print 'STATUS: Found cached targets - %s' % sorted(list(valid_uris))
+
+  # ignore keys other than valid_cached_ds keys
+  for invalid_uri in set(cached_ds.keys()) - valid_uris:
+    del cached_ds[invalid_uri]
+
+  return cached_ds
 
 def load_targets(targetfiles):
   """ Load the targets data """
   print 'STATUS: Loading target names from %s' % targetfiles
   targets_ds = [load_json_file(x) for x in targetfiles]
   targetnames = flatten_list([x.keys() for x in targets_ds])
-  print 'STATUS: Found targets - %s' % targetnames
+  print 'STATUS: Found targets - %s' % sorted(targetnames)
   return targets_ds
 
 def load_action(actionfile, target_action):
   """ Load the action data """
-  print 'STATUS: Loading action data from %s' % actionfile
+  print 'STATUS: Loading actionfile %s' % actionfile
   action_ds = load_json_file(actionfile)
   actionnames = action_ds.keys()
 
@@ -179,6 +196,7 @@ def cli(ctx, **kwargs):
   """ Manage device42 bulk operations """
   ctx.obj['config'] = load_json_file(kwargs['configfile'])
   validate_config(ctx.obj['config'])
+  print 'STATUS: Loading config file %s' % kwargs['configfile']
 
 @cli.command()
 @click.pass_context
@@ -208,8 +226,8 @@ def read(ctx, **kwargs):
   cached_targets = []
   if kwargs['cache']:
     cached_targets = load_cached_targets(ctx.obj['config']['cache'], kwargs['targets'])
-
-  print json.dumps(kwargs, indent=2)
+    if not cached_targets:
+      print kwargs['targets']
 
 @cli.command()
 @click.option('-t', '--targetfile', callback=find_targetfiles, multiple=True,
