@@ -1,6 +1,8 @@
 """ Device42 manager loader class """
 
 import copy
+import json
+
 import device42_mgr.lib.utils as utils
 from device42_mgr.cachier import Cachier
 from device42_mgr.device42api import Api
@@ -58,6 +60,18 @@ class Loader(object):
 
     if self.uncached_uris:
       self.load_from_device42(self.uncached_uris)
+
+  def __str__(self):
+    """ Handler when object is printed """
+    print_ds = {}
+    for attr in self.__dict__:
+      if attr == 'uncached_uris':
+        print_ds[attr] = list(self.__dict__[attr])
+      elif attr == 'cache':
+        print_ds[attr] = self.__dict__[attr].__dict__
+      else:
+        print_ds[attr] = self.__dict__[attr]
+    return json.dumps(print_ds, indent=2)
 
   def __init__(self, targetfiles, cache_dir, use_cache=False):
     # renaming key because targetfile contains an array

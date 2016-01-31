@@ -10,6 +10,7 @@
 import os
 import copy
 import click
+import json
 
 from device42_mgr.loader import Loader, Device42MgrLoaderException
 from device42_mgr.lib.utils import InvalidValueException
@@ -146,7 +147,7 @@ def read(ctx, **kwargs):
     click.echo(click.style(str(loader_exception), fg='red'))
     click.echo(click.style('ERROR: ' + str(loader_exception), fg='red'))
     ctx.exit(1)
-  print loader.__dict__
+  print loader
   #kwargs['action'] = load_action(kwargs['actionfile'], 'read')
 
 @cli.command()

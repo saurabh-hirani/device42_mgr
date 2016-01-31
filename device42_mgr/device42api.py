@@ -1,6 +1,7 @@
 """ Device42 API access class """
 
 import os
+import json
 import requests
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import ConnectionError, ConnectTimeout
@@ -31,6 +32,10 @@ class Api(object):
       raise Device42ApiException('Request - %s - expecting json - got %s' % \
                                  (url, response.headers['content-type']))
     return response.json()
+
+  def __str__(self):
+    """ Handler when object is printed """
+    return json.dumps(self.__dict__, indent=2)
 
   def __init__(self, **kwargs):
     """ Initialize connection params """

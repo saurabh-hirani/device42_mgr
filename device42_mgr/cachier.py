@@ -1,6 +1,7 @@
 """ Device42 manager caching class """
 
 import os
+import json
 import glob
 import device42_mgr.lib.utils as utils
 
@@ -33,6 +34,10 @@ class Cachier(object):
         del data[invalid_uri]
 
     self.uri_ds_map = data
+
+  def __str__(self):
+    """ Handler when object is printed """
+    return json.dumps(self.__dict__, indent=2)
 
   def __init__(self, cache_dir):
     self.cache_dir = cache_dir
