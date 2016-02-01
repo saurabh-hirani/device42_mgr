@@ -13,6 +13,7 @@ import click
 import json
 
 from device42_mgr.loader import Loader, Device42MgrLoaderException
+from device42_mgr.target import Target
 from device42_mgr.cachier import Cachier
 from device42_mgr.lib.utils import InvalidValueException
 import device42_mgr.lib.utils as utils
@@ -117,7 +118,6 @@ def cli(ctx, **kwargs):
   ctx.obj['config'] = utils.load_json_file(kwargs['configfile'])
   validate_config(ctx.obj['config'])
 
-
 @cli.command()
 @click.pass_context
 def create(ctx, **kwargs):
@@ -142,22 +142,27 @@ def create(ctx, **kwargs):
 @click.pass_context
 def read(ctx, **kwargs):
   """ Read device42 objects """
+  # create the cache object
   cache_obj = None
   if kwargs['cache'] or kwargs['refresh']:
     cache_obj = Cachier(ctx.obj['config']['cache']['dir'],
                         ctx.obj['config']['cache']['file'])
-  loader = Loader(kwargs['targetfile'],
-                  cache_obj,
-                  use_cache=kwargs['cache'],
+
+  # create the target objects
+  target_objs = []
+  for targetfile in kwargs['targetfile']:
+    target_objs.append(Target(targetfile))
+
+  # create the loader responsible for loading the targets
+  loader = Loader(target_objs, cache_obj, use_cache=kwargs['cache'], 
                   refresh_cache=kwargs['refresh'])
+
   try:
     loader.load()
   except Device42MgrLoaderException as loader_exception:
     click.echo(click.style(str(loader_exception), fg='red'))
-    click.echo(click.style('ERROR: ' + str(loader_exception), fg='red'))
     ctx.exit(1)
   print loader
-  #kwargs['action'] = load_action(kwargs['actionfile'], 'read')
 
 @cli.command()
 @click.option('-t', '--targetfile', callback=find_targetfiles, multiple=True,

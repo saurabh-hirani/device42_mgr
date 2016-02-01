@@ -8,7 +8,6 @@ import device42_mgr.lib.utils as utils
 
 class Cachier(object):
   """ Read/update the uri cache """
-
   def _load_from_cache(self, only_pickle=False):
     """ Method to load from cache - abstract how data is cached """
     data = {}
@@ -68,3 +67,6 @@ class Cachier(object):
     self.cache_dir = cache_dir
     self.cache_filename = cache_filename
     self.cache_filepath = os.path.join(cache_dir, cache_filename)
+    self.cache_exists = True
+    if not os.path.exists(self.cache_filepath):
+      self.cache_exists = False
